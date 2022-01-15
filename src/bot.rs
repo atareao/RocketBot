@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use chrono::{Utc, SecondsFormat};
 use serde_json::json;
-use reqwest::blocking::{Client, Response};
+use reqwest::blocking::{Client, Response, multipart};
 use reqwest::header::{HeaderMap, HeaderValue, HeaderName};
 use reqwest::Error;
 use std::str::FromStr;
@@ -45,6 +45,22 @@ impl Bot{
                 "msg": text
         }});
         post(&url, &headers, Some(serde_json::to_string(&body).unwrap()))
+    }
+
+    pub fn send_file(&self, room: &str, text: &str, description: &str,
+                     filepath: &str)->Result<Response, Error>{
+        let url = format!("{}://{}/api/v1/rooms.upload/{}",
+                          self.protocol, self.base_uri, room);
+        let mut headers: HashMap<String, String> = HashMap::new();
+        headers.insert("Content-type".to_string(), "application/json".to_string());
+        headers.insert("X-User-ID".to_string(), self.user_id.to_string());
+        headers.insert("X-Auth-Token".to_string(), self.token.to_string());
+        let form = multipart::Form::new()
+            .text("msg", text.to_string())
+            .text("description", description.to_string())
+            .file("file", filepath).unwrap();
+        post_form(&url, &headers, form)
+
     }
 
     pub fn clean_room(&self, room: &str)->Result<Response, Error>{
@@ -115,4 +131,19 @@ fn post(url: &str, headers: &HashMap<String, String>, body: Option<String>)->Res
             client.post(url).body(content).send()},
         None => client.post(url).send(),
     }
+}
+
+fn post_form(url: &str, headers: &HashMap<String, String>,
+             form: multipart::Form)->Result<Response, Error>{
+    println!("URL: {}", url);
+    let mut header_map = HeaderMap::new();
+    for keyvalue in headers{
+        header_map.insert(HeaderName::from_str(keyvalue.0).unwrap(),
+                          HeaderValue::from_str(keyvalue.1).unwrap());
+    }
+    let client = Client::builder()
+        .default_headers(header_map)
+        .build()
+        .unwrap();
+    client.post(url).multipart(form).send()
 }

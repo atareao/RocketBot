@@ -81,8 +81,24 @@ fn main() {
                                      .required(true)
                                      .takes_value(true))
                                 )
-                    .subcommand(App::new("image")
-                                .about("Send image")
+                    .subcommand(App::new("file")
+                                .about("Send file")
+                                .arg(Arg::new("room")
+                                     .short('r')
+                                     .required(true)
+                                     .takes_value(true))
+                                .arg(Arg::new("text")
+                                     .short('t')
+                                     .required(true)
+                                     .takes_value(true))
+                                .arg(Arg::new("description")
+                                     .short('d')
+                                     .required(true)
+                                     .takes_value(true))
+                                .arg(Arg::new("filepath")
+                                     .short('f')
+                                     .required(true)
+                                     .takes_value(true))
                                 )
                     )
         .get_matches();
@@ -91,6 +107,15 @@ fn main() {
             let room = subsub.value_of("room").unwrap();
             let text = subsub.value_of("text").unwrap();
             match bot.send_message(room, text){
+                Ok(result) => println!("{}", result.text().unwrap()),
+                Err(result) => println!("{}", result.to_string())
+            }
+        }else if let Some(subsub) = sub.subcommand_matches("file"){
+            let room = subsub.value_of("room").unwrap();
+            let text = subsub.value_of("text").unwrap();
+            let description = subsub.value_of("description").unwrap();
+            let filepath = subsub.value_of("filepath").unwrap();
+            match bot.send_file(room, text, description, filepath){
                 Ok(result) => println!("{}", result.text().unwrap()),
                 Err(result) => println!("{}", result.to_string())
             }
