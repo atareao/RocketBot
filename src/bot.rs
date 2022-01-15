@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use chrono::{Utc, SecondsFormat};
 use serde_json::json;
 use reqwest::blocking::{Client, Response};
 use reqwest::header::{HeaderMap, HeaderValue, HeaderName};
@@ -44,6 +45,42 @@ impl Bot{
                 "msg": text
         }});
         post(&url, &headers, Some(serde_json::to_string(&body).unwrap()))
+    }
+
+    pub fn clean_room(&self, room: &str)->Result<Response, Error>{
+        let url = format!("{}://{}/api/v1/rooms.cleanHistory", self.protocol, self.base_uri);
+        let mut headers: HashMap<String, String> = HashMap::new();
+        headers.insert("Content-type".to_string(), "application/json".to_string());
+        headers.insert("X-User-ID".to_string(), self.user_id.to_string());
+        headers.insert("X-Auth-Token".to_string(), self.token.to_string());
+        let now = Utc::now();
+        let body = json!({
+                "roomId": room,
+                "oldest": "1970-00-00T00:00:00.000Z",
+                "latest": now.to_rfc3339_opts(SecondsFormat::Millis, true),
+        });
+        post(&url, &headers, Some(serde_json::to_string(&body).unwrap()))
+
+    }
+    pub fn create_user(&self, username: &str, name: &str, email: &str, password: &str, change_password: Option<bool>)->Result<Response, Error>{
+        let url = format!("{}://{}/api/v1/users.create", self.protocol, self.base_uri);
+        let mut headers: HashMap<String, String> = HashMap::new();
+        headers.insert("Content-type".to_string(), "application/json".to_string());
+        headers.insert("X-User-ID".to_string(), self.user_id.to_string());
+        headers.insert("X-Auth-Token".to_string(), self.token.to_string());
+        let require_password_change = match change_password{
+            Some(value) => value,
+            _ => false,
+        };
+        let body = json!({
+                "username": username,
+                "name": name,
+                "email": email,
+                "password": password,
+                "requirePasswordChange": require_password_change
+        });
+        post(&url, &headers, Some(serde_json::to_string(&body).unwrap()))
+
     }
 }
 
