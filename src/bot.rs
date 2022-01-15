@@ -30,7 +30,15 @@ impl Bot{
         headers.insert("X-User-ID".to_string(), self.user_id.to_string());
         headers.insert("X-Auth-Token".to_string(), self.token.to_string());
         get(&url, &headers)
+    }
 
+    pub fn list_users(&self)->Result<Response, Error>{
+        let url = format!("{}://{}/api/v1/users.list", self.protocol, self.base_uri);
+        let mut headers: HashMap<String, String> = HashMap::new();
+        headers.insert("Content-type".to_string(), "application/json".to_string());
+        headers.insert("X-User-ID".to_string(), self.user_id.to_string());
+        headers.insert("X-Auth-Token".to_string(), self.token.to_string());
+        get(&url, &headers)
     }
 
     pub fn send_message(&self, room: &str, text: &str)->Result<Response, Error>{
@@ -60,7 +68,6 @@ impl Bot{
             .text("description", description.to_string())
             .file("file", filepath).unwrap();
         post_form(&url, &headers, form)
-
     }
 
     pub fn clean_room(&self, room: &str)->Result<Response, Error>{
@@ -74,6 +81,36 @@ impl Bot{
                 "roomId": room,
                 "oldest": "1970-00-00T00:00:00.000Z",
                 "latest": now.to_rfc3339_opts(SecondsFormat::Millis, true),
+        });
+        post(&url, &headers, Some(serde_json::to_string(&body).unwrap()))
+    }
+
+    pub fn invite_user(&self, room: &str, user: &str)->Result<Response, Error>{
+        let url = format!("{}://{}/api/v1/channels.invite", self.protocol, self.base_uri);
+        let mut headers: HashMap<String, String> = HashMap::new();
+        headers.insert("Content-type".to_string(), "application/json".to_string());
+        headers.insert("X-User-ID".to_string(), self.user_id.to_string());
+        headers.insert("X-Auth-Token".to_string(), self.token.to_string());
+        let body = json!({
+                "roomId": room,
+                "userId": user
+        });
+        post(&url, &headers, Some(serde_json::to_string(&body).unwrap()))
+    }
+
+    pub fn create_channel(&self, name: &str, read_only_option: Option<bool>)->Result<Response, Error>{
+        let url = format!("{}://{}/api/v1/channels.create", self.protocol, self.base_uri);
+        let mut headers: HashMap<String, String> = HashMap::new();
+        headers.insert("Content-type".to_string(), "application/json".to_string());
+        headers.insert("X-User-ID".to_string(), self.user_id.to_string());
+        headers.insert("X-Auth-Token".to_string(), self.token.to_string());
+        let read_only = match read_only_option{
+            Some(value) => value,
+            _ => false,
+        };
+        let body = json!({
+                "name": name,
+                "readOnly": read_only
         });
         post(&url, &headers, Some(serde_json::to_string(&body).unwrap()))
 
